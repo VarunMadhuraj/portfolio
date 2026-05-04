@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactLenis, useLenis } from 'lenis/react';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 
-// --- THE BRUTALIST CUSTOM CURSOR ---
+// --- THE BRUTALIST CUSTOM CURSOR (HIDDEN ON MOBILE) ---
 function CustomCursor() {
   const [isHovering, setIsHovering] = useState(false);
   const [isOverDark, setIsOverDark] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
@@ -15,17 +16,21 @@ function CustomCursor() {
   const smoothY = useSpring(mouseY, springConfig);
 
   useEffect(() => {
+    // Check if the device is likely a touch device
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      setIsMobile(true);
+      return; 
+    }
+
     const handleMouseMove = (e) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
 
       const target = e.target;
       
-      // Check for clickable elements
       const isClickable = target.closest('a, button, .cursor-pointer, [role="button"]');
       setIsHovering(!!isClickable);
 
-      // Aggressive check for dark sections (bg-ink or the footer tag itself)
       const darkSection = target.closest('.bg-ink, footer, [data-dark="true"]');
       setIsOverDark(!!darkSection);
     };
@@ -33,6 +38,8 @@ function CustomCursor() {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [mouseX, mouseY]);
+
+  if (isMobile) return null; // Do not render custom cursor on touch devices
 
   return (
     <motion.div
@@ -79,7 +86,16 @@ const ReactiveBlueprint = () => {
     const handleMouseMove = (e) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
     };
+    
+    // Also track touch for mobile blueprint reactivity
+    const handleTouchMove = (e) => {
+      if(e.touches.length > 0) {
+          mousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove);
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -123,12 +139,14 @@ const ReactiveBlueprint = () => {
     return () => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   return <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none" />;
 };
+
 
 // --- WEBAUDIO SYNTHESIZER LOGIC ---
 let audioCtx = null;
@@ -252,6 +270,17 @@ function BrutalistPiano() {
     };
   }, [handlePlay, handleRelease]);
 
+  // Handle touch events for mobile
+  const handleTouchStart = (e, key, freq) => {
+     e.preventDefault(); // Prevent scrolling when tapping piano
+     handlePlay(key, freq);
+  };
+  
+  const handleTouchEnd = (e, key) => {
+     e.preventDefault();
+     handleRelease(key);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -261,22 +290,22 @@ function BrutalistPiano() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4, ease: [0.77, 0, 0.175, 1] }}
-            className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none px-6 backdrop-blur-sm bg-paper/30"
+            className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none px-4 md:px-6 backdrop-blur-sm bg-paper/30"
           >
-            <div className="bg-ink text-paper p-10 md:p-16 border-2 border-highlighter shadow-[16px_16px_0px_0px_rgba(255,51,31,1)] text-center flex flex-col items-center max-w-xl">
+            <div className="bg-ink text-paper p-6 md:p-16 border-2 border-highlighter shadow-[16px_16px_0px_0px_rgba(255,51,31,1)] text-center flex flex-col items-center max-w-[90vw] md:max-w-xl">
               {birthdayState.isBirthday ? (
                 <>
-                  <span className="text-7xl md:text-8xl mb-6 block drop-shadow-lg">🎂</span>
-                  <h2 className="font-serif text-5xl md:text-6xl uppercase tracking-tighter mb-4">Thank You.</h2>
-                  <p className="font-mono text-xs md:text-sm tracking-[0.2em] opacity-50 uppercase border-t border-paper/20 pt-4 mt-2">
+                  <span className="text-5xl md:text-8xl mb-4 md:mb-6 block drop-shadow-lg">🎂</span>
+                  <h2 className="font-serif text-3xl md:text-6xl uppercase tracking-tighter mb-4">Thank You.</h2>
+                  <p className="font-mono text-[10px] md:text-sm tracking-[0.2em] opacity-50 uppercase border-t border-paper/20 pt-4 mt-2">
                     // SYSTEM_AGE_UPDATED
                   </p>
                 </>
               ) : (
                 <>
-                  <span className="text-7xl md:text-8xl mb-6 block drop-shadow-lg opacity-80">⚠️</span>
-                  <h2 className="font-serif text-4xl md:text-5xl uppercase tracking-tighter mb-4 text-highlighter">Access Denied.</h2>
-                  <p className="font-mono text-[10px] md:text-xs tracking-[0.2em] opacity-60 uppercase border-t border-paper/20 pt-4 mt-2 leading-relaxed">
+                  <span className="text-5xl md:text-8xl mb-4 md:mb-6 block drop-shadow-lg opacity-80">⚠️</span>
+                  <h2 className="font-serif text-2xl md:text-5xl uppercase tracking-tighter mb-4 text-highlighter">Access Denied.</h2>
+                  <p className="font-mono text-[8px] md:text-xs tracking-[0.2em] opacity-60 uppercase border-t border-paper/20 pt-4 mt-2 leading-relaxed">
                     // Right tune. Wrong day.<br/>// Retry sequence on OCT_06.
                   </p>
                 </>
@@ -286,9 +315,9 @@ function BrutalistPiano() {
         )}
       </AnimatePresence>
 
-      <div className="absolute top-0 left-0 w-full h-2 md:h-3 flex z-50 group hover:h-16 md:hover:h-20 transition-all duration-500 overflow-hidden border-b-2 border-ink bg-paper cursor-pointer">
-        <div className="absolute top-full left-6 mt-2 font-mono text-[8px] uppercase tracking-[0.2em] opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none delay-200">
-          // SYNTH_READY [A-K] // AWAITING_INPUT...
+      <div className="absolute top-0 left-0 w-full h-3 md:h-3 flex z-50 group hover:h-12 md:hover:h-20 transition-all duration-500 overflow-hidden border-b-2 border-ink bg-paper cursor-pointer select-none touch-none">
+        <div className="absolute top-full left-2 md:left-6 mt-2 font-mono text-[6px] md:text-[8px] uppercase tracking-[0.2em] opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none delay-200">
+          // SYNTH_READY [A-K]
         </div>
 
         {keysConfig.map((k) => {
@@ -299,10 +328,12 @@ function BrutalistPiano() {
               onMouseDown={() => handlePlay(k.w.key, k.w.freq)}
               onMouseUp={() => handleRelease(k.w.key)}
               onMouseLeave={() => handleRelease(k.w.key)}
+              onTouchStart={(e) => handleTouchStart(e, k.w.key, k.w.freq)}
+              onTouchEnd={(e) => handleTouchEnd(e, k.w.key)}
               className={`flex-1 relative transition-colors duration-75 cursor-pointer border-r-2 border-ink last:border-r-0
                 ${isWhiteActive ? 'bg-ink text-paper' : 'hover:bg-ink/5'}`}
             >
-              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-mono font-bold opacity-0 group-hover:opacity-40 pointer-events-none select-none transition-opacity">
+              <span className="absolute bottom-1 md:bottom-2 left-1/2 -translate-x-1/2 text-[8px] md:text-xs font-mono font-bold opacity-0 group-hover:opacity-40 pointer-events-none select-none transition-opacity">
                 {k.w.key}
               </span>
 
@@ -312,10 +343,12 @@ function BrutalistPiano() {
                   onMouseDown={(e) => { e.stopPropagation(); handlePlay(k.b.key, k.b.freq); }}
                   onMouseUp={(e) => { e.stopPropagation(); handleRelease(k.b.key); }}
                   onMouseLeave={(e) => { e.stopPropagation(); handleRelease(k.b.key); }}
-                  className={`absolute top-0 right-0 translate-x-1/2 w-6 md:w-10 h-2/3 z-10 transition-colors duration-75 cursor-pointer border-2 border-t-0 border-ink
+                  onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e, k.b.key, k.b.freq); }}
+                  onTouchEnd={(e) => { e.stopPropagation(); handleTouchEnd(e, k.b.key); }}
+                  className={`absolute top-0 right-0 translate-x-1/2 w-4 md:w-10 h-2/3 z-10 transition-colors duration-75 cursor-pointer border-2 border-t-0 border-ink
                     ${activeKeys[k.b.key] ? 'bg-highlighter text-paper' : 'bg-ink hover:bg-ink/80'}`}
                 >
-                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] md:text-[10px] text-paper font-mono opacity-0 group-hover:opacity-70 pointer-events-none select-none transition-opacity">
+                  <span className="absolute bottom-1 md:bottom-2 left-1/2 -translate-x-1/2 text-[6px] md:text-[10px] text-paper font-mono opacity-0 group-hover:opacity-70 pointer-events-none select-none transition-opacity hidden md:block">
                     {k.b.key}
                   </span>
                 </div>
@@ -337,22 +370,22 @@ function ProjectCard({ index, title, subtitle, desc, onClick }) {
       viewport={{ once: true, amount: 0.1 }}
       transition={{ duration: 0.5, delay: index * 0.1, ease: [0.77, 0, 0.175, 1] }}
       onClick={onClick}
-      className="group relative z-10 bg-paper border-2 border-ink p-8 flex flex-col justify-between min-h-[260px] hover:shadow-[8px_8px_0px_0px_rgba(255,51,31,1)] hover:border-highlighter hover:-translate-y-2 hover:translate-x-1 transition-all duration-300 cursor-pointer"
+      className="group relative z-10 bg-paper border-2 border-ink p-6 md:p-8 flex flex-col justify-between min-h-[220px] md:min-h-[260px] hover:shadow-[8px_8px_0px_0px_rgba(255,51,31,1)] hover:border-highlighter hover:-translate-y-2 hover:translate-x-1 transition-all duration-300 cursor-pointer"
     >
       <div>
-        <span className="font-mono text-xs opacity-30 group-hover:text-highlighter transition-colors">/0{index + 1}</span>
-        <h3 className="font-serif text-3xl uppercase mt-4 mb-2 group-hover:text-highlighter transition-colors">{title}</h3>
-        {subtitle && <h4 className="font-mono text-xs md:text-sm opacity-90 font-bold mb-3 text-ink/80">{subtitle}</h4>}
+        <span className="font-mono text-[10px] md:text-xs opacity-30 group-hover:text-highlighter transition-colors">/0{index + 1}</span>
+        <h3 className="font-serif text-2xl md:text-3xl uppercase mt-4 mb-2 group-hover:text-highlighter transition-colors leading-tight">{title}</h3>
+        {subtitle && <h4 className="font-mono text-[10px] md:text-xs uppercase tracking-wider opacity-80 font-bold mb-3 text-ink/90">{subtitle}</h4>}
         
-        <p className="font-mono text-xs md:text-sm opacity-80 leading-relaxed">{desc}</p>
+        <p className="font-mono text-[10px] md:text-sm opacity-80 leading-relaxed line-clamp-3 md:line-clamp-none">{desc}</p>
       </div>
 
-      <div className="mt-8 flex items-center justify-between border-t-2 border-ink/10 pt-4 overflow-hidden">
-        <span className="font-mono text-[10px] uppercase tracking-widest opacity-30 group-hover:opacity-100 group-hover:text-highlighter transition-colors">
+      <div className="mt-6 md:mt-8 flex items-center justify-between border-t-2 border-ink/10 pt-4 overflow-hidden">
+        <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-widest opacity-30 group-hover:opacity-100 group-hover:text-highlighter transition-colors">
           System_Node
         </span>
         <motion.span 
-          className="font-mono text-xs font-bold text-highlighter bg-ink px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="font-mono text-[10px] md:text-xs font-bold text-highlighter bg-ink px-2 py-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
         >
           [+ INSPECT ]
         </motion.span>
@@ -362,27 +395,32 @@ function ProjectCard({ index, title, subtitle, desc, onClick }) {
 }
 
 // --- TIMELINE COMPONENT (DYNAMIC & CLICKABLE) ---
-function TimelineItem({ date, title, subtitle, index, onClick }) {
+function TimelineItem({ date, title, subtitle, desc, index, onClick }) {
   return (
     <motion.div 
-      initial={{ opacity: 0, x: -30 }}
+      initial={{ opacity: 0, x: -20 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.6, delay: index * 0.1, ease: [0.77, 0, 0.175, 1] }}
       onClick={onClick}
-      className="relative pl-12 pb-24 md:pb-32 last:pb-10 border-l-2 border-ink/20 group cursor-pointer"
+      className="relative pl-8 md:pl-12 pb-16 md:pb-32 last:pb-10 border-l-2 border-ink/20 group cursor-pointer"
     >
       <div className="absolute left-[-9px] top-0 w-4 h-4 bg-paper border-2 border-ink rounded-full z-20 transition-all duration-300 group-hover:bg-highlighter group-hover:scale-125 group-hover:shadow-[0_0_10px_rgba(255,51,31,0.5)]" />
       
       <div className="relative z-10 transition-transform duration-300 group-hover:translate-x-2">
-        <span className="font-mono text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] block mb-3 transition-colors group-hover:text-highlighter opacity-60 group-hover:opacity-100">
+        <span className="font-mono text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] block mb-2 md:mb-3 transition-colors group-hover:text-highlighter opacity-60 group-hover:opacity-100">
           {date}
         </span>
-        <h3 className="font-serif text-3xl md:text-5xl uppercase tracking-tighter mb-2 group-hover:text-highlighter transition-colors">{title}</h3>
-        <h4 className="font-mono text-xs md:text-sm opacity-90 font-bold mb-6 text-ink/80">{subtitle}</h4>
+        <h3 className="font-serif text-2xl md:text-5xl uppercase tracking-tighter mb-1 md:mb-2 group-hover:text-highlighter transition-colors leading-none">{title}</h3>
+        <h4 className="font-mono text-[10px] md:text-sm uppercase tracking-wider opacity-90 font-bold mb-3 md:mb-6 text-ink/80">{subtitle}</h4>
 
-        <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest border border-ink/30 px-3 py-1 bg-ink/5 group-hover:bg-highlighter group-hover:border-highlighter group-hover:text-paper transition-all">
-          <span className="w-2 h-2 bg-ink group-hover:bg-paper animate-pulse" />
+        {/* Hidden on very small screens, visible on md+ */}
+        <p className="hidden md:block max-w-xl text-xs md:text-sm leading-relaxed opacity-80 font-mono mb-6">
+          {desc}
+        </p>
+
+        <span className="inline-flex items-center gap-2 font-mono text-[8px] md:text-[10px] uppercase tracking-widest border border-ink/30 px-2 py-1 md:px-3 md:py-1 bg-ink/5 group-hover:bg-highlighter group-hover:border-highlighter group-hover:text-paper transition-all">
+          <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-ink group-hover:bg-paper animate-pulse" />
           [+ EXPAND LOG ]
         </span>
       </div>
@@ -398,6 +436,17 @@ function App() {
   const [selectedCard, setSelectedCard] = useState(null); 
   const timeoutRef = useRef(null);
   const lenis = useLenis();
+
+  // Prevent background scrolling when modal is open on mobile
+  useEffect(() => {
+    if (selectedCard || menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; }
+  }, [selectedCard, menuOpen]);
+
 
   const triggerFamilyEasterEgg = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -538,7 +587,7 @@ function App() {
 
   return (
     <ReactLenis root>
-      <div className="relative min-h-screen overflow-x-hidden cursor-none bg-paper">
+      <div className="relative min-h-screen overflow-x-hidden md:cursor-none bg-paper text-ink">
         
         {/* INJECT CUSTOM CURSOR */}
         <CustomCursor />
@@ -547,11 +596,11 @@ function App() {
         {/* --- PERSISTENT MENU BUTTON --- */}
         <button  
           onClick={() => setMenuOpen(!menuOpen)}
-          className="fixed top-8 left-8 z-[200] w-12 h-12 border-2 border-ink bg-paper flex flex-col items-center justify-center gap-1 hover:bg-highlighter hover:text-paper transition-all duration-300 pointer-events-auto"
+          className="fixed top-4 left-4 md:top-8 md:left-8 z-[200] w-10 h-10 md:w-12 md:h-12 border-2 border-ink bg-paper flex flex-col items-center justify-center gap-1 hover:bg-highlighter hover:text-paper transition-all duration-300 pointer-events-auto"
         >
-          <motion.span animate={{ rotate: menuOpen ? 45 : 0, y: menuOpen ? 6 : 0 }} className="w-6 h-[2px] bg-current" />
-          <motion.span animate={{ opacity: menuOpen ? 0 : 1 }} className="w-6 h-[2px] bg-current" />
-          <motion.span animate={{ rotate: menuOpen ? -45 : 0, y: menuOpen ? -6 : 0 }} className="w-6 h-[2px] bg-current" />
+          <motion.span animate={{ rotate: menuOpen ? 45 : 0, y: menuOpen ? 6 : 0 }} className="w-5 md:w-6 h-[2px] bg-current" />
+          <motion.span animate={{ opacity: menuOpen ? 0 : 1 }} className="w-5 md:w-6 h-[2px] bg-current" />
+          <motion.span animate={{ rotate: menuOpen ? -45 : 0, y: menuOpen ? -6 : 0 }} className="w-5 md:w-6 h-[2px] bg-current" />
         </button>
 
         {/* --- COMMAND MENU OVERLAY --- */}
@@ -561,15 +610,15 @@ function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[150] bg-paper/80 backdrop-blur-md flex items-center justify-center p-12 pointer-events-auto"
+              className="fixed inset-0 z-[150] bg-paper/90 backdrop-blur-md flex items-center justify-center p-6 md:p-12 pointer-events-auto overflow-y-auto"
             >
-              <div className="max-w-7xl w-full">
-                <div className="flex justify-between items-end mb-12 border-b-2 border-ink pb-4">
-                  <h2 className="font-serif text-6xl tracking-tighter">//COMMAND_CENTER</h2>
-                  <span className="font-mono text-xs opacity-50 uppercase tracking-widest">[System Index]</span>
+              <div className="max-w-7xl w-full my-auto pt-16 pb-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 border-b-2 border-ink pb-4 gap-2">
+                  <h2 className="font-serif text-4xl md:text-6xl tracking-tighter">//COMMAND_CENTER</h2>
+                  <span className="font-mono text-[10px] md:text-xs opacity-50 uppercase tracking-widest">[System Index]</span>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {menuItems.map((item, index) => (
                     <ProjectCard 
                       key={item.title} 
@@ -593,7 +642,7 @@ function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="fixed inset-0 z-[300] bg-paper/80 backdrop-blur-md flex items-center justify-center p-6 md:p-12 pointer-events-auto cursor-pointer"
+              className="fixed inset-0 z-[300] bg-paper/80 backdrop-blur-md flex items-center justify-center p-4 md:p-12 pointer-events-auto cursor-pointer"
               onClick={() => setSelectedCard(null)}
             >
               <motion.div
@@ -602,46 +651,46 @@ function App() {
                 exit={{ y: 20, scale: 0.95, opacity: 0 }}
                 transition={{ duration: 0.4, ease: premiumEase }}
                 onClick={(e) => e.stopPropagation()} 
-                className="w-full max-w-4xl bg-paper border-4 border-ink p-8 md:p-16 shadow-[16px_16px_0px_0px_rgba(255,51,31,1)] relative flex flex-col max-h-[85vh] overflow-y-auto cursor-auto"
+                className="w-full max-w-4xl bg-paper border-4 border-ink p-6 md:p-16 shadow-[8px_8px_0px_0px_rgba(255,51,31,1)] md:shadow-[16px_16px_0px_0px_rgba(255,51,31,1)] relative flex flex-col max-h-[85vh] overflow-y-auto cursor-auto"
               >
-                <div className="flex justify-between items-start mb-12 border-b-2 border-ink pb-6 gap-4">
+                <div className="flex justify-between items-start mb-8 md:mb-12 border-b-2 border-ink pb-4 md:pb-6 gap-2 md:gap-4">
                   <div>
-                    <span className="font-mono text-xs font-bold text-highlighter uppercase tracking-[0.2em] block mb-2">
+                    <span className="font-mono text-[10px] md:text-xs font-bold text-highlighter uppercase tracking-[0.2em] block mb-1 md:mb-2">
                       {selectedCard.subtitle || "System_Log_Data"}
                     </span>
-                    <h2 className="font-serif text-5xl md:text-7xl uppercase tracking-tighter">
+                    <h2 className="font-serif text-3xl md:text-7xl uppercase tracking-tighter leading-none">
                       {selectedCard.title}
                     </h2>
                   </div>
                   <button 
                     onClick={() => setSelectedCard(null)}
-                    className="font-mono text-sm md:text-base font-bold transition-colors border-2 px-3 py-2 hover:text-paper whitespace-nowrap flex-shrink-0 cursor-pointer border-ink hover:border-highlighter hover:bg-highlighter bg-transparent"
+                    className="font-mono text-xs md:text-base font-bold transition-colors border-2 px-2 py-1 md:px-3 md:py-2 hover:text-paper whitespace-nowrap flex-shrink-0 cursor-pointer border-ink hover:border-highlighter hover:bg-highlighter bg-transparent"
                     aria-label="Close Modal"
                   >
                     [ X ]
                   </button>
                 </div>
                 
-                <div className="space-y-6">
-                  <p className="font-mono text-sm md:text-base leading-relaxed opacity-80 uppercase tracking-widest mb-8 border-l-4 border-highlighter pl-4">
+                <div className="space-y-4 md:space-y-6">
+                  <p className="font-mono text-xs md:text-base leading-relaxed opacity-80 uppercase tracking-widest mb-6 md:mb-8 border-l-4 border-highlighter pl-3 md:pl-4">
                     {selectedCard.desc}
                   </p>
                   
                   {selectedCard.details && selectedCard.details.map((point, idx) => (
                     <motion.div 
                       key={idx} 
-                      initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + (idx * 0.1) }}
-                      className="flex items-start gap-4"
+                      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + (idx * 0.1) }}
+                      className="flex items-start gap-3 md:gap-4"
                     >
-                      <span className="font-mono text-highlighter mt-1">{`>`}</span>
-                      <p className="font-mono text-sm md:text-base leading-relaxed opacity-90">{point}</p>
+                      <span className="font-mono text-highlighter mt-0.5 md:mt-1 text-sm">{`>`}</span>
+                      <p className="font-mono text-xs md:text-base leading-relaxed opacity-90">{point}</p>
                     </motion.div>
                   ))}
                 </div>
 
-                <div className="mt-16 pt-6 border-t-2 border-ink/20 flex items-center gap-4 opacity-40">
-                  <span className="w-3 h-3 bg-ink animate-pulse" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest">End_Of_File</span>
+                <div className="mt-8 md:mt-16 pt-4 md:pt-6 border-t-2 border-ink/20 flex items-center gap-3 md:gap-4 opacity-40">
+                  <span className="w-2 h-2 md:w-3 md:h-3 bg-ink animate-pulse" />
+                  <span className="font-mono text-[8px] md:text-[10px] uppercase tracking-widest">End_Of_File</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -651,7 +700,7 @@ function App() {
         <AnimatePresence>
           {familyRevealed && (
             <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} transition={{ duration: 1.5, ease: premiumEase }} className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-none w-full text-center">
-              <p className="font-mono text-[8px] md:text-[10px] tracking-[0.3em] uppercase text-ink opacity-40">// Core Dependencies: Madhu, Nisha, Varshith</p>
+              <p className="font-mono text-[6px] md:text-[10px] tracking-[0.3em] uppercase text-ink opacity-40">// Core Dependencies: Madhu, Nisha, Varshith</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -659,30 +708,32 @@ function App() {
         <main className="relative z-10 pointer-events-none">
           <div className="pointer-events-auto"><BrutalistPiano /></div>
           
-          <header className="min-h-screen flex flex-col items-center justify-center px-6 relative">
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 1.2 }} className="absolute top-24 md:top-28 right-6 md:right-12 flex items-center gap-3 z-40 pointer-events-auto">
-              <a href="https://linkedin.com/in/varun-madhuraj" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border-2 border-ink flex items-center justify-center text-ink bg-paper hover:bg-highlighter hover:border-highlighter hover:text-paper transition-all duration-300 cursor-pointer" aria-label="LinkedIn">
-                <svg className="w-4 h-4 fill-current pointer-events-none" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+          <header className="min-h-screen flex flex-col items-center justify-center px-4 md:px-6 relative">
+            
+            {/* Top Right Buttons */}
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 1.2 }} className="absolute top-20 right-4 md:top-28 md:right-12 flex items-center gap-2 md:gap-3 z-40 pointer-events-auto">
+              <a href="https://linkedin.com/in/varun-madhuraj" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 border-2 border-ink flex items-center justify-center text-ink bg-paper hover:bg-highlighter hover:border-highlighter hover:text-paper transition-all duration-300 cursor-pointer" aria-label="LinkedIn">
+                <svg className="w-3 h-3 md:w-4 md:h-4 fill-current pointer-events-none" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
               </a>
-              <a href="https://github.com/VarunMadhuraj" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border-2 border-ink flex items-center justify-center text-ink bg-paper hover:bg-highlighter hover:border-highlighter hover:text-paper transition-all duration-300 cursor-pointer" aria-label="GitHub">
-                <svg className="w-5 h-5 fill-current pointer-events-none" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              <a href="https://github.com/VarunMadhuraj" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 border-2 border-ink flex items-center justify-center text-ink bg-paper hover:bg-highlighter hover:border-highlighter hover:text-paper transition-all duration-300 cursor-pointer" aria-label="GitHub">
+                <svg className="w-4 h-4 md:w-5 md:h-5 fill-current pointer-events-none" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
               </a>
-              <a href="./Varun_Madhuraj_Resume.pdf" download className="h-10 px-4 border-2 border-ink flex items-center gap-2 text-ink bg-paper hover:bg-highlighter hover:text-paper transition-all duration-300 cursor-pointer pointer-events-auto">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest hidden sm:block pointer-events-none">Resume</span>
-                <svg className="w-4 h-4 stroke-current pointer-events-none" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              <a href="./Varun_Madhuraj_Resume.pdf" download className="h-8 md:h-10 px-2 md:px-4 border-2 border-ink flex items-center gap-1 md:gap-2 text-ink bg-paper hover:bg-highlighter hover:text-paper transition-all duration-300 cursor-pointer pointer-events-auto">
+                <span className="text-[8px] md:text-[10px] font-mono font-bold uppercase tracking-widest hidden sm:block pointer-events-none">Resume</span>
+                <svg className="w-3 h-3 md:w-4 md:h-4 stroke-current pointer-events-none" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               </a>
             </motion.div>
 
-            <div className="w-full max-w-7xl flex flex-col items-center mt-16 pointer-events-auto">
+            <div className="w-full max-w-7xl flex flex-col items-center mt-12 md:mt-16 pointer-events-auto">
               
-              <h1 className="font-serif text-[15vw] md:text-[11vw] leading-[0.8] tracking-tighter w-full mb-16 flex flex-col items-center relative">
+              <h1 className="font-serif text-[18vw] md:text-[15vw] lg:text-[11vw] leading-[0.8] tracking-tighter w-full mb-10 md:mb-16 flex flex-col items-center relative">
                 <div className="text-left w-full overflow-hidden">
                   <motion.span initial={{ y: "100%" }} animate={{ y: 0 }} transition={{ duration: 1.2, ease: premiumEase }} className="block">
                     VARUN
                   </motion.span>
                 </div>
                 
-                <div className="text-right w-full overflow-hidden whitespace-nowrap py-2 relative">
+                <div className="text-right w-full overflow-hidden whitespace-nowrap py-1 md:py-2 relative">
                   <motion.span 
                     initial={{ y: "100%" }} animate={{ y: 0 }} 
                     transition={{ duration: 1.2, ease: premiumEase, delay: 0.1 }}
@@ -704,137 +755,140 @@ function App() {
                 </div>
               </h1>
               
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.6, ease: premiumEase }} className="flex flex-col md:flex-row gap-12 md:gap-16 items-start md:items-end justify-between w-full">
-                <span className="group bg-highlighter text-paper px-6 py-2 font-bold text-xs md:text-sm uppercase tracking-tighter shadow-[4px_4px_0px_0px_rgba(28,28,28,1)] transition-all duration-300 cursor-default">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.6, ease: premiumEase }} className="flex flex-col md:flex-row gap-6 md:gap-16 items-start md:items-end justify-between w-full">
+                <span className="group bg-highlighter text-paper px-4 py-2 md:px-6 md:py-2 font-bold text-[10px] md:text-xs lg:text-sm uppercase tracking-tighter shadow-[4px_4px_0px_0px_rgba(28,28,28,1)] transition-all duration-300 cursor-default self-start">
                   // THREAT INTELLIGE<span className="group-hover:text-ink transition-colors duration-500">N</span>CE // <span className="group-hover:text-ink transition-colors duration-500">S</span>OC OP<span className="group-hover:text-ink transition-colors duration-500">E</span>RATIONS // VAPT
                 </span>
-                <p className="max-w-md md:text-right text-[10px] md:text-xs font-bold leading-relaxed opacity-70 uppercase tracking-[0.2em]">Cybersecurity professional focused on defending environments through proactive monitoring and incident response.</p>
+                <p className="max-w-xs md:max-w-md md:text-right text-[10px] md:text-xs font-bold leading-relaxed opacity-70 uppercase tracking-[0.1em] md:tracking-[0.2em] mt-4 md:mt-0">
+                  Cybersecurity professional focused on defending environments through proactive monitoring and incident response.
+                </p>
               </motion.div>
             </div>
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 1.5 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 1.5 }} className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-3">
               <span className="font-mono text-[8px] uppercase tracking-[0.4em] opacity-40">Scroll</span>
-              <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} className="w-[1px] h-10 bg-ink opacity-30" />
+              <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} className="w-[1px] h-8 md:h-10 bg-ink opacity-30" />
             </motion.div>
           </header>
 
-          {/* --- CONTENT SECTIONS --- */}
-          
-          <section id="experience" className="max-w-7xl mx-auto px-6 pt-40 pointer-events-auto relative">
-            <h2 className="font-serif text-6xl md:text-8xl uppercase tracking-tighter mb-20 border-b-2 border-ink pb-4">// EXPERIENCE</h2>
-            <div className="max-w-4xl">
-              {expData.map((data, index) => (
-                <TimelineItem 
-                  key={index}
-                  index={index} 
-                  date={data.date} 
-                  title={data.title} 
-                  subtitle={data.subtitle} 
-                  desc={data.desc} 
-                  onClick={() => setSelectedCard(data)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section id="education" className="max-w-7xl mx-auto px-6 pt-40 pointer-events-auto relative">
-            <h2 className="font-serif text-6xl md:text-8xl uppercase tracking-tighter mb-20 border-b-2 border-ink pb-4">// EDUCATION</h2>
-            <div className="max-w-4xl">
-               {eduData.map((data, index) => (
-                <TimelineItem 
-                  key={index}
-                  index={index} 
-                  date={data.date} 
-                  title={data.title} 
-                  subtitle={data.subtitle} 
-                  desc={data.desc} 
-                  onClick={() => setSelectedCard(data)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section id="projects" className="max-w-7xl mx-auto px-6 pt-40 pointer-events-auto relative">
-            <h2 className="font-serif text-6xl md:text-8xl uppercase tracking-tighter mb-20 border-b-2 border-ink pb-4">// PROJECTS</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projectData.map((data, index) => (
-                <ProjectCard 
-                  key={data.title}
-                  index={index} 
-                  title={data.title} 
-                  subtitle={data.subtitle} 
-                  desc={data.desc} 
-                  onClick={() => setSelectedCard(data)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section id="certs" className="max-w-7xl mx-auto px-6 pt-40 pointer-events-auto relative">
-            <h2 className="font-serif text-6xl md:text-8xl uppercase tracking-tighter mb-20 border-b-2 border-ink pb-4">// CERTIFICATIONS</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {certData.map((data, index) => (
-                <ProjectCard 
-                  key={data.title}
-                  index={index} 
-                  title={data.title} 
-                  subtitle={data.subtitle} 
-                  desc={data.desc} 
-                  onClick={() => setSelectedCard(data)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section id="skills" className="max-w-7xl mx-auto px-6 pt-40 pointer-events-auto relative">
-            <h2 className="font-serif text-6xl md:text-8xl uppercase tracking-tighter mb-20 border-b-2 border-ink pb-4">// SKILLS</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {skillData.map((data, index) => (
-                <ProjectCard 
-                  key={data.title}
-                  index={index} 
-                  title={data.title} 
-                  desc={data.desc} 
-                  onClick={() => setSelectedCard(data)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <div id="culture" className="max-w-7xl mx-auto px-6 pt-40 pb-40 pointer-events-auto">
-            <motion.footer 
-              initial={{ opacity: 0, y: 50 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true, amount: 0.2 }} 
-              transition={{ duration: 1, ease: premiumEase }} 
-              className="bg-ink text-paper px-8 md:px-12 py-24 md:py-32 rounded-none mb-12 relative overflow-hidden"
-            >
-              <div className="flex justify-between items-start mb-20 relative z-10">
-                <h2 className="font-serif text-6xl md:text-8xl leading-none uppercase tracking-tighter">//CULTURE & ORGS</h2>
-                <div className="text-right font-mono hidden md:block">
-                  <p className="font-bold uppercase text-[10px] tracking-widest opacity-50 mb-2">Socials</p>
-                  <ul className="text-2xl">
-                    <li className="hover:text-highlighter cursor-pointer transition-colors"><a href="https://linkedin.com/in/varun-madhuraj" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
-                    <li className="hover:text-highlighter cursor-pointer transition-colors"><a href="https://github.com/VarunMadhuraj" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-                  </ul>
-                </div>
+          <div className="max-w-7xl mx-auto px-4 md:px-6 pointer-events-auto pt-10 md:pt-20 pb-20 md:pb-40">
+            
+            <section id="experience" className="pt-16 md:pt-20">
+              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// EXPERIENCE</h2>
+              <div className="max-w-4xl">
+                {expData.map((data, index) => (
+                  <TimelineItem 
+                    key={index}
+                    index={index} 
+                    date={data.date} 
+                    title={data.title} 
+                    subtitle={data.subtitle} 
+                    desc={data.desc} 
+                    onClick={() => setSelectedCard(data)}
+                  />
+                ))}
               </div>
-              <div className="flex flex-col md:flex-row justify-between items-end gap-8 relative z-10">
-                <div className="max-w-3xl text-base md:text-lg leading-relaxed opacity-100 font-mono space-y-8">
-                  <p>
-                    <strong className="text-highlighter block mb-2 text-lg md:text-xl">ACM Student Chapter (VIT-AP):</strong> 
-                    Head of External Affairs (Jan 2024 - Apr 2025) & Team Lead Documentation (Aug 2023 - Jan 2024). Managed industry relations, sponsorships, and ensured consistency of all written and visual documentation for chapter activities.
-                  </p>
-                  <p>
-                    <strong className="text-highlighter block mb-2 text-lg md:text-xl">Music Club:</strong> 
-                    Active musician, Pianist and Bassist for 'Not So Engineers'. Applying the same precision to security as I do to complex Carnatic metal fusion.
-                  </p>
-                </div>
-                <span className="font-serif text-[15vw] md:text-[10vw] leading-none opacity-10 uppercase select-none tracking-tighter">2026</span>
+            </section>
+
+            <section id="education" className="pt-16 md:pt-20">
+              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// EDUCATION</h2>
+              <div className="max-w-4xl">
+                 {eduData.map((data, index) => (
+                  <TimelineItem 
+                    key={index}
+                    index={index} 
+                    date={data.date} 
+                    title={data.title} 
+                    subtitle={data.subtitle} 
+                    desc={data.desc} 
+                    onClick={() => setSelectedCard(data)}
+                  />
+                ))}
               </div>
-            </motion.footer>
+            </section>
+
+            <section id="projects" className="pt-16 md:pt-20">
+              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// PROJECTS</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {projectData.map((data, index) => (
+                  <ProjectCard 
+                    key={data.title}
+                    index={index} 
+                    title={data.title} 
+                    subtitle={data.subtitle} 
+                    desc={data.desc} 
+                    onClick={() => setSelectedCard(data)}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section id="certs" className="pt-16 md:pt-20">
+              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// CERTIFICATIONS</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {certData.map((data, index) => (
+                  <ProjectCard 
+                    key={data.title}
+                    index={index} 
+                    title={data.title} 
+                    subtitle={data.subtitle} 
+                    desc={data.desc} 
+                    onClick={() => setSelectedCard(data)}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section id="skills" className="pt-16 md:pt-20">
+              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// SKILLS</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {skillData.map((data, index) => (
+                  <ProjectCard 
+                    key={data.title}
+                    index={index} 
+                    title={data.title} 
+                    desc={data.desc} 
+                    onClick={() => setSelectedCard(data)}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section id="culture" className="pt-24 md:pt-40">
+              <motion.footer 
+                initial={{ opacity: 0, y: 50 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                viewport={{ once: true, amount: 0.2 }} 
+                transition={{ duration: 1, ease: premiumEase }} 
+                className="bg-ink text-paper px-6 py-16 md:px-12 md:py-32 rounded-none mb-6 md:mb-12 relative overflow-hidden"
+              >
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 md:mb-16 gap-6 md:gap-8">
+                  <h2 className="font-serif text-4xl md:text-7xl lg:text-8xl leading-none uppercase tracking-tighter">//CULTURE & ORGS</h2>
+                  <div className="font-mono mt-2 md:mt-0">
+                    <p className="font-bold uppercase text-[8px] md:text-[10px] tracking-widest opacity-50 mb-2">Socials</p>
+                    <ul className="text-lg md:text-2xl flex md:flex-col gap-4 md:gap-1">
+                      <li className="hover:text-highlighter cursor-pointer transition-colors"><a href="https://linkedin.com/in/varun-madhuraj" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+                      <li className="hover:text-highlighter cursor-pointer transition-colors"><a href="https://github.com/VarunMadhuraj" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-end gap-6 md:gap-8 border-t border-paper/20 pt-6 md:pt-8">
+                  <div className="max-w-2xl text-xs md:text-sm leading-relaxed opacity-80 font-mono space-y-4 md:space-y-6">
+                    <p>
+                      <strong className="text-highlighter block mb-1">ACM Student Chapter (VIT-AP):</strong> 
+                      Head of External Affairs (Jan 2024 - Apr 2025) & Team Lead Documentation (Aug 2023 - Jan 2024). Managed industry relations, sponsorships, and ensured consistency of all written and visual documentation for chapter activities.
+                    </p>
+                    <p>
+                      <strong className="text-highlighter block mb-1">Music Club:</strong> 
+                      Active musician, Pianist and Bassist for 'Not So Engineers'. Applying the same precision to security as I do to complex Carnatic metal fusion.
+                    </p>
+                  </div>
+                  <span className="font-serif text-[20vw] md:text-[10vw] leading-none opacity-10 uppercase select-none tracking-tighter">2026</span>
+                </div>
+              </motion.footer>
+            </section>
+
           </div>
-
         </main>
       </div>
     </ReactLenis>
