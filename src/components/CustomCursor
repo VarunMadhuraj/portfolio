@@ -1,0 +1,22 @@
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+
+export default function CustomCursor() {
+  const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 w-4 h-4 bg-ink rounded-full pointer-events-none z-[9999] mix-blend-difference"
+      animate={{ x: mousePos.x - 8, y: mousePos.y - 8 }}
+      transition={{ type: 'spring', damping: 30, stiffness: 500, mass: 0.5 }}
+    />
+  );
+}
