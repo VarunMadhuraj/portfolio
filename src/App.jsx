@@ -16,7 +16,6 @@ function CustomCursor() {
   const smoothY = useSpring(mouseY, springConfig);
 
   useEffect(() => {
-    // Check if the device is likely a touch device
     if (window.matchMedia("(pointer: coarse)").matches) {
       setIsMobile(true);
       return; 
@@ -39,7 +38,7 @@ function CustomCursor() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [mouseX, mouseY]);
 
-  if (isMobile) return null; // Do not render custom cursor on touch devices
+  if (isMobile) return null;
 
   return (
     <motion.div
@@ -87,7 +86,6 @@ const ReactiveBlueprint = () => {
       mousePos.current = { x: e.clientX, y: e.clientY };
     };
     
-    // Also track touch for mobile blueprint reactivity
     const handleTouchMove = (e) => {
       if(e.touches.length > 0) {
           mousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -270,9 +268,8 @@ function BrutalistPiano() {
     };
   }, [handlePlay, handleRelease]);
 
-  // Handle touch events for mobile
   const handleTouchStart = (e, key, freq) => {
-     e.preventDefault(); // Prevent scrolling when tapping piano
+     e.preventDefault(); 
      handlePlay(key, freq);
   };
   
@@ -361,7 +358,7 @@ function BrutalistPiano() {
   );
 }
 
-// --- PROJECT CARD COMPONENT (DYNAMIC & CLICKABLE) ---
+// --- PROJECT CARD COMPONENT ---
 function ProjectCard({ index, title, subtitle, desc, onClick }) {
   return (
     <motion.div 
@@ -374,7 +371,7 @@ function ProjectCard({ index, title, subtitle, desc, onClick }) {
     >
       <div>
         <span className="font-mono text-[10px] md:text-xs opacity-30 group-hover:text-highlighter transition-colors">/0{index + 1}</span>
-        <h3 className="font-serif text-2xl md:text-3xl uppercase mt-4 mb-2 group-hover:text-highlighter transition-colors leading-tight">{title}</h3>
+        <h3 className="font-serif text-xl sm:text-2xl md:text-3xl uppercase mt-4 mb-2 group-hover:text-highlighter transition-colors leading-tight">{title}</h3>
         {subtitle && <h4 className="font-mono text-[10px] md:text-xs uppercase tracking-wider opacity-80 font-bold mb-3 text-ink/90">{subtitle}</h4>}
         
         <p className="font-mono text-[10px] md:text-sm opacity-80 leading-relaxed line-clamp-3 md:line-clamp-none">{desc}</p>
@@ -394,7 +391,7 @@ function ProjectCard({ index, title, subtitle, desc, onClick }) {
   );
 }
 
-// --- TIMELINE COMPONENT (DYNAMIC & CLICKABLE) ---
+// --- TIMELINE COMPONENT ---
 function TimelineItem({ date, title, subtitle, desc, index, onClick }) {
   return (
     <motion.div 
@@ -414,7 +411,6 @@ function TimelineItem({ date, title, subtitle, desc, index, onClick }) {
         <h3 className="font-serif text-2xl md:text-5xl uppercase tracking-tighter mb-1 md:mb-2 group-hover:text-highlighter transition-colors leading-none">{title}</h3>
         <h4 className="font-mono text-[10px] md:text-sm uppercase tracking-wider opacity-90 font-bold mb-3 md:mb-6 text-ink/80">{subtitle}</h4>
 
-        {/* Hidden on very small screens, visible on md+ */}
         <p className="hidden md:block max-w-xl text-xs md:text-sm leading-relaxed opacity-80 font-mono mb-6">
           {desc}
         </p>
@@ -437,7 +433,6 @@ function App() {
   const timeoutRef = useRef(null);
   const lenis = useLenis();
 
-  // Prevent background scrolling when modal is open on mobile
   useEffect(() => {
     if (selectedCard || menuOpen) {
       document.body.style.overflow = 'hidden';
@@ -614,7 +609,7 @@ function App() {
             >
               <div className="max-w-7xl w-full my-auto pt-16 pb-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 border-b-2 border-ink pb-4 gap-2">
-                  <h2 className="font-serif text-4xl md:text-6xl tracking-tighter">//COMMAND_CENTER</h2>
+                  <h2 className="font-serif text-3xl md:text-6xl tracking-tighter">//COMMAND_CENTER</h2>
                   <span className="font-mono text-[10px] md:text-xs opacity-50 uppercase tracking-widest">[System Index]</span>
                 </div>
                 
@@ -658,7 +653,7 @@ function App() {
                     <span className="font-mono text-[10px] md:text-xs font-bold text-highlighter uppercase tracking-[0.2em] block mb-1 md:mb-2">
                       {selectedCard.subtitle || "System_Log_Data"}
                     </span>
-                    <h2 className="font-serif text-3xl md:text-7xl uppercase tracking-tighter leading-none">
+                    <h2 className="font-serif text-2xl sm:text-3xl md:text-7xl uppercase tracking-tighter leading-none">
                       {selectedCard.title}
                     </h2>
                   </div>
@@ -710,7 +705,6 @@ function App() {
           
           <header className="min-h-screen flex flex-col items-center justify-center px-4 md:px-6 relative">
             
-            {/* Top Right Buttons */}
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 1.2 }} className="absolute top-20 right-4 md:top-28 md:right-12 flex items-center gap-2 md:gap-3 z-40 pointer-events-auto">
               <a href="https://linkedin.com/in/varun-madhuraj" target="_blank" rel="noopener noreferrer" className="w-8 h-8 md:w-10 md:h-10 border-2 border-ink flex items-center justify-center text-ink bg-paper hover:bg-highlighter hover:border-highlighter hover:text-paper transition-all duration-300 cursor-pointer" aria-label="LinkedIn">
                 <svg className="w-3 h-3 md:w-4 md:h-4 fill-current pointer-events-none" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
@@ -726,7 +720,7 @@ function App() {
 
             <div className="w-full max-w-7xl flex flex-col items-center mt-12 md:mt-16 pointer-events-auto">
               
-              <h1 className="font-serif text-[18vw] md:text-[15vw] lg:text-[11vw] leading-[0.8] tracking-tighter w-full mb-10 md:mb-16 flex flex-col items-center relative">
+              <h1 className="font-serif text-[11vw] md:text-[10vw] lg:text-[9vw] leading-[0.8] tracking-tighter w-full mb-10 md:mb-16 flex flex-col items-center relative">
                 <div className="text-left w-full overflow-hidden">
                   <motion.span initial={{ y: "100%" }} animate={{ y: 0 }} transition={{ duration: 1.2, ease: premiumEase }} className="block">
                     VARUN
@@ -774,7 +768,7 @@ function App() {
           <div className="max-w-7xl mx-auto px-4 md:px-6 pointer-events-auto pt-10 md:pt-20 pb-20 md:pb-40">
             
             <section id="experience" className="pt-16 md:pt-20">
-              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// EXPERIENCE</h2>
+              <h2 className="font-serif text-3xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// EXPERIENCE</h2>
               <div className="max-w-4xl">
                 {expData.map((data, index) => (
                   <TimelineItem 
@@ -791,7 +785,7 @@ function App() {
             </section>
 
             <section id="education" className="pt-16 md:pt-20">
-              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// EDUCATION</h2>
+              <h2 className="font-serif text-3xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// EDUCATION</h2>
               <div className="max-w-4xl">
                  {eduData.map((data, index) => (
                   <TimelineItem 
@@ -808,7 +802,7 @@ function App() {
             </section>
 
             <section id="projects" className="pt-16 md:pt-20">
-              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// PROJECTS</h2>
+              <h2 className="font-serif text-3xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// PROJECTS</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {projectData.map((data, index) => (
                   <ProjectCard 
@@ -824,7 +818,7 @@ function App() {
             </section>
 
             <section id="certs" className="pt-16 md:pt-20">
-              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// CERTIFICATIONS</h2>
+              <h2 className="font-serif text-3xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// CERTIFICATIONS</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {certData.map((data, index) => (
                   <ProjectCard 
@@ -840,7 +834,7 @@ function App() {
             </section>
 
             <section id="skills" className="pt-16 md:pt-20">
-              <h2 className="font-serif text-4xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// SKILLS</h2>
+              <h2 className="font-serif text-3xl md:text-6xl lg:text-8xl uppercase tracking-tighter mb-10 md:mb-20 border-b-2 border-ink pb-2 md:pb-4">// SKILLS</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {skillData.map((data, index) => (
                   <ProjectCard 
@@ -863,7 +857,7 @@ function App() {
                 className="bg-ink text-paper px-6 py-16 md:px-12 md:py-32 rounded-none mb-6 md:mb-12 relative overflow-hidden"
               >
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 md:mb-16 gap-6 md:gap-8">
-                  <h2 className="font-serif text-4xl md:text-7xl lg:text-8xl leading-none uppercase tracking-tighter">//CULTURE & ORGS</h2>
+                  <h2 className="font-serif text-3xl md:text-7xl lg:text-8xl leading-none uppercase tracking-tighter">//CULTURE & ORGS</h2>
                   <div className="font-mono mt-2 md:mt-0">
                     <p className="font-bold uppercase text-[8px] md:text-[10px] tracking-widest opacity-50 mb-2">Socials</p>
                     <ul className="text-lg md:text-2xl flex md:flex-col gap-4 md:gap-1">
@@ -883,7 +877,7 @@ function App() {
                       Active musician, Pianist and Bassist for 'Not So Engineers'. Applying the same precision to security as I do to complex Carnatic metal fusion.
                     </p>
                   </div>
-                  <span className="font-serif text-[20vw] md:text-[10vw] leading-none opacity-10 uppercase select-none tracking-tighter">2026</span>
+                  <span className="font-serif text-[15vw] md:text-[10vw] leading-none opacity-10 uppercase select-none tracking-tighter">2026</span>
                 </div>
               </motion.footer>
             </section>
